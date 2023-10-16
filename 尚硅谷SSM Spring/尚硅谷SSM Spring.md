@@ -517,3 +517,85 @@ AOP：AOP是OOP的完善和补充，AOP是面向切面编程，横向的编程�
 #### 关系梳理
 
 <img src="78798e974226dd45ffbc589377e728c5.png" alt="屏幕截图 2023-10-09 232547.png" style="zoom:50%;" />
+
+<br/>
+
+## spring-ioc的annotation快速实现
+
+### 底层技术组成
+
+<img src="1c651ede812935bda0308e48b899e6e5.png" alt="屏幕截图 2023-10-14 224511.png" style="zoom:50%;" />
+
+<br/>
+
+AspectJ：早期的AOP实现框架，springAOP借用了它的AOP注解
+
+在使用springaop时需要注意底层实现层用的是jdk的动态代理还是cglib，如果该类是有接口的，则底层实现是jdk的动态代理技术，代理后不能使用该类的对象，应该使用多态去使用它的父类，因为代理类继承他的父类，是兄弟关系
+
+如果该类没有接口，底层实现是cglib，可以使用该类作为声明，因为代理类继承该类，代理类生成对象后通过ioc自动注入给该类
+
+<br/>
+
+### 初步实现
+
+#### 1.引入依赖
+
+- 整合包：spring-aspectj（包括一下两个依赖）
+
+- spring-aop（在spring-connext中已经依赖）
+- aspectj
+
+#### 2.创建增强类
+
+	增强类需要插入ioc容器  ——@Component
+	
+	配置切面 ——@Aspect
+
+#### 3.定义方法存储增强代码
+
+	具体定义几个方法，根据需要插入的位置决定 
+
+#### 4.使用注解配置
+
+	指定插入目标方法的位置
+
+- @Before 前置
+- @AfterReturning 后置
+
+- @AfterThrowing 异常
+- @After 最后
+- @Around 环绕
+
+#### 5.配置切点表达式（指定插入的方法）
+
+#### 6.开启注解
+
+	在配置类中加入==@EnableAspectJAutoProxy==注解，告诉spring使用AspectJ中的注解
+
+<br/>
+
+### 获取切点详细信息
+
+增强方法中获取目标方法信息
+
+```java
+1.获取目标方法的信息（方法名、参数、访问修饰符、类信息等）
+
+	（JoinPoint jointPoint）——org.aspectj.lang.JoinPoint
+
+		jointPoint包含目标方法的信息
+
+2.返回的结果 - @AfterReturning
+
+	（Object result）result接返回的结果
+
+	@AfterReturning(value = "excution(...)", returning = "形参名")：表示该形参是用来接收返回值的
+```
+
+3. 异常的信息 - @AfterThrowing
+
+	```java
+	（Throwable t）t接收异常信息
+	
+	@AfterThrowing(value = "execution(...)", throwing = "形参名");
+	```
