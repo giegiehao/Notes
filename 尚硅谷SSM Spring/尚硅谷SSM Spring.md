@@ -1,6 +1,6 @@
-# Spring
+# Spring framework
 
-### 需要了解的一些名词
+## 需要了解的一些名词
 
 单一架构：一个项目，一个工程，导出为war包，在一个tomcat上运行
 
@@ -454,7 +454,7 @@ public class Test {
 
 <br/>
 
-### 代理模式
+## 代理模式
 
 代理模式可以解决附加功能代码干扰核心代码和不方便统一维护的问题！
 
@@ -488,7 +488,7 @@ public class Test {
 
 <br/>
 
-### AOP面向切面编程
+## AOP面向切面编程
 
 OOP（面向对象编程）：纵向编程思维，继承关系，子类需要用到父类方法，一或是完全使用父类的方法，抑或是完全重写父类的方法，缺点就是不能对父类方法进行插入修改局部。
 
@@ -520,7 +520,7 @@ AOP：AOP是OOP的完善和补充，AOP是面向切面编程，横向的编程�
 
 <br/>
 
-## spring-ioc的annotation快速实现
+## spring-aop的annotation快速实现
 
 ### 底层技术组成
 
@@ -540,7 +540,7 @@ AspectJ：早期的AOP实现框架，springAOP借用了它的AOP注解
 
 #### 1.引入依赖
 
-- 整合包：spring-aspectj（包括一下两个依赖）
+- 整合包：spring-aspects（包括以下两个依赖）
 
 - spring-aop（在spring-connext中已经依赖）
 - aspectj
@@ -599,3 +599,184 @@ AspectJ：早期的AOP实现框架，springAOP借用了它的AOP注解
 	
 	@AfterThrowing(value = "execution(...)", throwing = "形参名");
 	```
+
+
+
+### 切点表达式语法 execution
+
+固定语法 execution(1 2 3.4.5(6))
+
+1. 访问修饰符
+
+2. 方法的返回参数类型 如果不考虑访问修饰符和返回类型，只需要写一个 *，且不能只考虑一个，就是说**访问修饰符和返回类型，必须全部指定，或者只写一个 ***
+
+3. 包的位置
+
+   具体包：com.x.y.z
+
+   单层模糊：com.x.y.*
+
+   多层模糊：com..z 任意层模糊
+
+   多层模糊 .. 不能在包位置的开头 找所有impl包：com..impl 不能是 ..impl
+
+4. 类名
+
+   具体类名：className
+
+   模糊类名：*
+
+   部分模糊：*Name
+
+5. 方法名
+
+   具体方法名：methodName
+
+   模糊方法名：*
+
+   部分模糊：*Name
+
+6. 形参列表
+
+   没有参数：()
+
+   任意参数：(..)
+
+   部分模糊：(String..) 开头是String类型; (..int) 最后是int类型; (String..int)
+
+
+
+### 切点表达式的提取和复用 @Pointcut
+
+定义一个空方法，使用注解@Pointcut()，在@Pointcut注解中写切点表达式，在需要使用这个切点表达式的增强注解中调用该方法即可。
+
+一般创建一个存储切点的类，单独维护切点表达式，然后其它增强注解调用方法（切点表达式类的全限定符.方法名）
+
+
+
+### @Around环绕通知
+
+ProceedingJoinPoint：获取目标方法信息，比JoinPoint多一个目标方法调用的方法 proceed(args)
+
+使用@Around的增强方法中必须有参数ProceedingJoinPotin类型
+
+在@Around环绕通知中，目标方法的调用需要使用ProceedingJoinPotin对象来调用
+
+所以可以自定义在目标方法的任何位置添加增强代码
+
+
+
+### 切面优先级设定@Order
+
+如果一个方法形成多个切面，需要设置切面的优先级
+
+在@Order()中添加数字，数字越少，优先级越高，即按顺序执行
+
+
+
+## 事务
+
+### 编程式事务和声明式事务
+
+- 编程式事务：手动开启和提交事务，事务回滚，事务的所有操作都要用编程去实现
+- 声明式事务：程序员只需要生命配置文件（注解/xml），指定哪些方法需要添加事务和事务属性，而有关事务的操作交给对应的框架
+
+
+
+### spring-tx 事务管理器
+
+事务管理器编写了事务的实现代码，事务管理器用于事务增强中，而事务增强作用于指定需要开启添加事务的方法上
+
+不同的事务管理器编写了不同框架和平台的实现代码和规范
+
+在spring的声明式事务只需要选择事务管理器和指定需要添加事务的方法即可
+
+而其中的事务增强的实现不需要手动编写
+
+![image-20231021164910252](C:\Users\ouxiaoxin\AppData\Roaming\Typora\typora-user-images\image-20231021164910252.png)
+
+
+
+### 事务注解的添加
+
+在配置类上加上@EnableTransactionManagement 表示开启事务注解的支持
+
+添加事务@Transactional
+
+```java
+@Transactional
+public void changeInfo(){
+    Dao.updateName();
+    Dao.updateAge();
+    //如果这其中有一个操作有问题或者报错，这整个方法都会回滚
+}
+
+/**
+*添加事务@Transactional
+*	位置：方法 当前方法添加事务
+*		 类上 类中的所有方法都添加事务
+*/
+```
+
+
+
+### @Transactional属性
+
+1. 只读模式**readOnly** = true（默认为false）
+
+   只读模式可以提升查询事务的效率！推荐事务中只有查询代码时使用只读模式
+
+   一般情况下@Transactional都添加在类上，类下的所有方法都有事务，在仅查询方法中就可以添加只读模式，提高效率。
+
+2. 超时时间**timeout** = 时间 秒（默认不超时）
+
+   设置timeout，超过时间，就会回滚事务和抛出异常（TransactionTimeoutException）
+
+   如果类上设置了事务属性，方法也设置了事务注解，就近原则，方法上的事务会覆盖类上的事务
+
+3. 指定异常回滚和指定异常不回滚
+
+   默认情况下，发生运行时异常事务才会回滚
+
+   我们可以指定其它异常来控制异常回滚：
+
+   **rollbackFor** = Exception.class
+
+   或在回滚异常范围内，指定某个异常不回滚：
+
+   **noRollbackFor** = IOException.class
+
+4. 事务隔离级别
+
+   ![image-20231024172038411](C:\Users\ouxiaoxin\AppData\Roaming\Typora\typora-user-images\image-20231024172038411.png)
+
+   mysql默认第三级别
+
+   推荐使用第二级别，性能最好，避免脏读
+
+   **isolation** = Isolation.READ_COMMITTED
+   
+5. 事务传播行为**propagation**
+
+   事务传播行为是指事务之间的调用，如何影响子事务，比如子事务是否加入父事务，还是开启一个独立的事务不受父方法影响等
+
+   默认值：REQUIRED 如果父方法有事务就加入，如果没有就创建新事务
+
+   ![image-20231026001748593](C:\Users\ouxiaoxin\AppData\Roaming\Typora\typora-user-images\image-20231026001748593.png)
+
+
+
+
+
+
+
+
+
+
+
+# MyBatis
+
+## Mybatis简介
+
+MyBatis 是一款优秀的**持久层框架**，它支持自定义 SQL、存储过程以及高级映射。MyBatis 免除了几乎所有的 JDBC 代码以及设置参数和获取结果集的工作。MyBatis 可以通过简单的 XML 或注解来配置和映射原始类型、接口和 Java POJO（Plain Old Java Objects，普通老式 Java 对象）为数据库中的记录。
+
