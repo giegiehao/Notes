@@ -780,3 +780,304 @@ public void changeInfo(){
 
 MyBatis 是一款优秀的**持久层框架**，它支持自定义 SQL、存储过程以及高级映射。MyBatis 免除了几乎所有的 JDBC 代码以及设置参数和获取结果集的工作。MyBatis 可以通过简单的 XML 或注解来配置和映射原始类型、接口和 Java POJO（Plain Old Java Objects，普通老式 Java 对象）为数据库中的记录。
 
+## Mybatis原始实现
+
+### 导入依赖
+
+```xml
+<dependency>
+    <groupId>org.mybatis</groupId>
+    <artifactId>mybatis</artifactId>
+</dependency>
+<!-- mybatis依赖-->
+
+<dependency>
+    <groupId>mysql</groupId>
+    <artifactId>mysql-connector-java</artifactId>
+</dependency>
+<!-- jdbc依赖-->
+```
+
+
+
+### Mapper接口和MapperXML文件
+
+在mapper接口中定义方法，mapper接口相当于dao，不过mapper接口中没有sql语句，只有方法定义，mapper接口中方法不允许重载。
+
+xxxMapper.xml文件，用来放sql语句，mapper接口和xml文件一一对应
+
+![image-20231028235232812](C:\Users\ouxiaoxin\AppData\Roaming\Typora\typora-user-images\image-20231028235232812.png)
+
+
+
+### Mybatis配置文件
+
+mymatis-config.xml，配置mybatis数据库连接信息，性能配置，日志输出，扫描mapper.xml配置等
+
+关于mybatis配置文件的属性可以在[mybatis官网](https://mybatis.org/mybatis-3/zh/index.html)查找
+
+属性的顺序要按照以下大纲的先后顺序
+
+![image-20231029150428274](C:\Users\ouxiaoxin\AppData\Roaming\Typora\typora-user-images\image-20231029150428274.png)
+
+
+
+### 使用步骤
+
+```java
+//1.读取外部配置文件（mybatis-config.xml)
+InputStream ips = Resources.getResourceAsStream ("mybatis-config.xml") ;
+
+//2.创建sqLSessionFactory
+SqlSessionFactory sq1SessionFactory = new Sq1SessionFactoryBuilder().build(ips);
+
+//3.根据sqLSessionFactory创建sqLSession(每次业务创建一个，用完就释放）
+SqlSession sqlSession = sq1SessionFactory.openSession () ;
+
+//4.获取接口的代理对象（jdk动态代理技术）调用代理对象的方法，就会查找mapper接口的方法
+EmployeeMapper mapper = sqlSession.getMapper(EmployeeMapper.class);
+Employee employee = mapper . queryById (1) ;
+System.out.println ("employee=" + employee) ;
+
+//5.提交事务（非DQL)和释放资源
+sqlSession.commit();
+sqlSession.close();
+```
+
+
+
+## ibatis实现
+
+mybatis是ibatis的封装和优化，ibatis版本为1.x，2.x，在3.x版本更新为bybatis
+
+ibatis不需要Mapper接口，直接在sqlsession对象中使用xml文件中的sql语句
+
+xml中sql的动态参数也只能由sqlsession对象中的方法传，最多传一个参数
+
+```JAVA
+//1.读取外部配置文件（mybatis-config.xmL)
+InputStream ips = Resources.getResourceAsStream("mybatis-config.xml");
+
+//2.创建sqLSessionFactory
+SqlSessionFactory sq1SessionFactory=new SqlSessionFactoryBuilder().build(ips);
+
+//3.根据sqLSessionFactory创建sqLSession(每次业务创建一个，用完就释放）
+SqlSession sqlSession = sqlSessionFactory. openSession();
+
+//4.sqLSession提供的curd方法进行数据库查询即可
+// seled tone selectList/ insert/ delete / update 查找对应的sqL语句标签， mybatis在执行！
+//参数1:字符串sqL标签对应的标识id/namespace.id参数2:Object执行sqL语句传入的参数
+Student student = sqlSession.selectOne("xx.jj.kkk", 1);
+System.out.println("student ="+student);
+
+//5.提交事务（非DQL)和释放资源
+sqlSession.commit();
+sqlSession.close();
+```
+
+以上和mybatis少了动态代理这步
+
+
+
+缺点：
+
+1. sql语句标签的指定没有提示，容易出错
+2. 参数只能传递一个，如果要传递多个还需要包装成一个对象
+3. 返回值Object，没有提示
+
+![image-20231029003450498](C:\Users\ouxiaoxin\AppData\Roaming\Typora\typora-user-images\image-20231029003450498.png)
+
+
+
+## Mybatis的原理
+
+Mybatis的底层还是ibatis，多了个接口和生成的代理对象。先把接口和xml绑定起来（id标识），又和sqlSession封装成一个新的代理对象，sqlSession最后调用ibatis的方式进行sql执行，解决了方法没有提示的问题
+
+因为接口和xml绑定起来，xml中sql的动态参数从定义的接口方法的参数列表中来（先构造sql语句，再传给sqlsession对象），不限制参数数量，解决了原本sqlsession对象中原生方法只能传一个参数的问题
+
+![image-20231029012531658](C:\Users\ouxiaoxin\AppData\Roaming\Typora\typora-user-images\image-20231029012531658.png)
+
+
+
+## 动态sql的参数传入
+
+### 取值符号#和$的区别
+
+#{key}：占位符 + 赋值
+
+${key}：字符串拼接 
+
+使用#{key}可以防止注入攻击
+
+但是#{key}只能用于动态值的位置，不能用于动态容器名（标签、列名、sql关键字等），因为#{key}在赋值前相当于值占位符？
+
+而${key}可以用于动态容器名，字符串拼接没有约束
+
+所以在一般只需要动态值的情况下使用#，在需要拼接动态列名等情况下#和$一并使用
+
+select * from student where ${columnName} = #{columnValue}
+
+
+
+### 单个简单类型传入
+
+```java
+//Mapper接口
+//删除一行数据
+int deleteId(int id){}
+
+//根据班级查询学生
+List<Student> queryByClass(String class){}
+
+//插入一条学生信息
+int insertStudent(Student stu){}
+
+//插入学生名字和班级
+int insertStudentMap(Map map){}
+```
+
+传入单个简单参数类型 (key)可以随便写，因为只有一个，自动把传入的参数赋给key，一般情况推荐使用参数名
+
+```xml
+<!-- delete语句返回影响行数，默认返回int，不需要指定返回类型-->
+<delete id="deleteId">
+	delete from students where id = #{(key)id}
+</delete>
+
+<select id="queryByClass" resultType="com.pojo.Student">
+	select * from students where class=#{(key)class}
+</select>
+```
+
+### 单个实体对象传入
+
+直接使用实体对象中的属性名即可传值
+
+```xml
+<insert id="insertStudent">
+	insert into students(name, age, class) value (#{name}, #{age}, #{class})
+</insert>
+```
+
+### 多个简单类型传入
+
+方案一：@Param注解指定多个参数的key （推荐）
+
+方案二：mybatis默认机制 方法中形参的key从左到右依次为 （arg0 arg1 arg3 ...）或者（param1 param2 param3 ...)
+
+```java
+//根据班级和姓名查找
+Student queryByClassAndName1(@Param("a") String class, @Param("b") String name){}
+
+Student queryByClassAndName2(String class, String name)
+```
+
+```xml
+<select id="queryByClassAndName1" resultType="com.pojo.Student">
+	select * from students where class=#{a} and name = #{b}
+</select>
+
+<select id="queryByClassAndName1" resultType="com.pojo.Student">
+	select * from students where class=#{arg0/param1} and name = #{arg1/param2}
+</select>
+```
+
+### map类型传入
+
+直接用map中的key即可，给到参数中的是map中key对应的value值
+
+```java
+map.put("name", "张三");
+map.put("class", "软件技术222")
+```
+
+```xml
+<insert id="insertStudent">
+	insert into insertStudentMap(name, class) value (#{name}, #{class})
+</insert>
+```
+
+
+
+## 数据输出
+
+数据输出大致分为两种形式：
+
+- 增删改操作返回的受影响行数：直接使用int或long类型接收即可
+- 查询的查询结果：需要使用resultType指定结果类型
+
+### 单个简单类型和定义别名
+
+resultType语法：
+
+- 类的全限定符
+- 别名简称
+
+```xml
+<select id="..." resultType="类的全限定符 | 别名简称">
+	sql
+</select>
+```
+
+mybatis给我们提供了72种默认的别名！这些都是我们常用的Java数据类型！[java的常用数据类型]
+基本数据类型 int double -> _int _double
+包装数据类型 Integer Double -> int integer double
+集合容器类型 Map Lis tHashMap ->小写即可 map list hashmap
+
+扩展：自定义的类添加别名，简化类的全限定符的书写
+
+在mybatis配置中添加属性
+
+```xml
+<!-- 给某个类单独定义别名-->
+<typeAliases>
+	<typeAlias type="com.pojo.Student" alias="student" />
+</typeAliases>
+
+<!-- 批量定义：将包下的所有类定义别名，别名是类名首字母小写-->
+<typeAliases>
+	<package name="com.pojo" />
+</typeAliases>
+<!-- 在批量定义前提下，如果想给一个类定义一个不是首字母小写的别名可以在类上使用注解@Alias("别名")-->
+```
+
+### 单个实体类输出
+
+与单个简单类型输出一样，只要在resultType属性中指定返回的实体类(全限定符/别名)即可
+
+默认要求：返回的单个实体类型，要求列名和实体类中属性名一致，才能成功属性映射进行封装，实体类中没有和列名一致的将不会进行封装，只封装两部分名字一一对应的属性
+
+但是数据库命名规范和java属性命名规范不一样，这就需要在sql查询中为返回的列起别名，比如
+
+```xml
+<select id="queryByClassAndName1" resultType="com.pojo.Student">
+	select student_name studentName, student_age studentAge from students where class=#{id}
+</select>
+```
+
+可以在mybatis配置中设置支持驼峰式自动映射：student_name -> studentName 符合转换要求的命名就不需要手动加列别名
+
+### 返回map数据类型
+
+resultType="map" 即可把结果封装到map中
+
+如果结果只有一行数据，key=列名、value=列的结果，以这种形式封装到一个map中
+
+如果结果有多行数据，则每一行结果都封装成一个map，返回List<map>
+
+### 返回List数据类型
+
+切记：返回集合类型，resultType不需要指定集合类型，而是指定集合中泛型的类型
+
+原因：在ibatis中，所有的查询操作的底层的查询的方法都是selectList()，这个方法本身返回的就是List，即便是seleteOne方法，底层也是调用selectList方法，然后把第一个结果返回而已
+
+```java
+List<Student> selectAll(){}
+```
+
+```xml
+<select id="selectAll" resultType="Student">
+	sql
+</select>
+```
+

@@ -43,9 +43,9 @@ Version：版本号
 Packaging：打包后缀
 
 	jar包 代表普通的java工程
-
+	
 	war包 代表java的web工程
-
+	
 	pom包 代表不打包，用来做继承的父工程
 
 <br/>
@@ -63,11 +63,11 @@ Packaging：打包后缀
 <scope> 引入依赖的作用域
 
 	默认 compile	范围 main test 运行和打包(全范围)
-
+	
 	test	test
-
+	
 	runtime	运行和打包
-
+	
 	provided	main test
 
 <br/>
@@ -77,9 +77,9 @@ Packaging：打包后缀
 **依赖冲突：**发现已经存在依赖（重复依赖）会终止依赖传递 避免循环依赖和重复依赖的问题
 
 	依赖冲突的解决原则：
-
+	
 		第一原则：依赖传递路径长短，路径越短（靠前）优先
-
+	
 		第二原则：依赖导入的先后顺序，靠前优先
 
 <br/>
