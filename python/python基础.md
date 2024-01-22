@@ -295,3 +295,57 @@ fp.close()
 
 
 
+## - 异常
+
+````python
+捕获异常的格式
+try:
+	方法体
+except 单个异常/（多个异常）:
+    异常处理
+````
+
+
+
+# 爬虫实战
+
+## 爬虫手段
+
+## 反爬手段
+
+## urllib库
+
+urllib作用：模拟浏览器请求目标地址，并对网页的内容进行抓取处理
+
+urllib基础请求：urllib.request.urlopen()
+
+```python
+引入urllib库
+import urllib.request
+
+使用urllib访问百度网页并接收响应信息
+url = 'http://www.baidu.com'
+response = urllib.request.urlopen(url)
+
+response对象为HTTPResponse类型
+方法：
+read()、readline()、readlines()、getcode()、geturl()、getheaders()
+```
+
+下载资源：urllib.request.urlretrieve(下载地址， 目标文件)
+
+```````````````````````````````````````````````````python
+把百度主页下载到本地html.txt文件中（没有就自动创建）
+url = "http://www.baidu.com"
+urllib.request.urlretrieve(url, "html.txt")
+
+下载图片
+urllib.request.urlretrieve("xxx.jpg", "pho")
+```````````````````````````````````````````````````
+
+
+
+
+
+
+
