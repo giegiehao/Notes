@@ -265,10 +265,21 @@ for item in person.items():
 
 ### 文件打开和关闭
 
+open方法默认情况下使用gbk编码，如果要保存汉字需要指定编码格式encoding
+
 ```python
-fp = open("文件路径", "打开模式")
+fp = open("文件路径", "打开模式", encoding='utf-8')
 fp.close()
 ```
+
+使用with as语句打开
+
+````````````````python
+with open("xxx", "w", encoding='xxx') as fp:
+    方法体，使用局部变量fp
+````````````````
+
+
 
 ### 打开模式
 
@@ -311,13 +322,27 @@ except 单个异常/（多个异常）:
 
 ## 爬虫手段
 
+1. 自定义请求
+
 ## 反爬手段
+
+### UA
+
+User Agent，用户代理，简称UA，它是一个特殊字符串头，使得服务器能够识别用户使用的操作系统及版本、cpu类型、浏览器及版本。浏览器内核、浏览器渲染引擎、浏览器语言、插件等。
+
+### cookie
+
+### referer
+
+
 
 ## urllib库
 
 urllib作用：模拟浏览器请求目标地址，并对网页的内容进行抓取处理
 
-urllib基础请求：urllib.request.urlopen()
+### urllib基础请求
+
+urllib.request.urlopen()
 
 ```python
 引入urllib库
@@ -332,7 +357,9 @@ response对象为HTTPResponse类型
 read()、readline()、readlines()、getcode()、geturl()、getheaders()
 ```
 
-下载资源：urllib.request.urlretrieve(下载地址， 目标文件)
+### 下载资源
+
+urllib.request.urlretrieve(下载地址， 目标文件)
 
 ```````````````````````````````````````````````````python
 把百度主页下载到本地html.txt文件中（没有就自动创建）
@@ -340,12 +367,169 @@ url = "http://www.baidu.com"
 urllib.request.urlretrieve(url, "html.txt")
 
 下载图片
-urllib.request.urlretrieve("xxx.jpg", "pho")
+urllib.request.urlretrieve("xxx.jpg", "photo.jpg")
 ```````````````````````````````````````````````````
 
+### 自定义请求对象
+
+````````````````python
+url = "https://www.baidu.com"
+# 自定义请求头
+headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0"}
+
+# 自定义请求对象，这里参数顺序和参数列表中不止这两个形参，且在原码的url和headers位置中还有个data参数，所以使用关键字传参
+request = urllib.request.Request(url=url, headers=headers)
+
+respone = urllib.request.urlopen(request)
+print(respone.read().decode())
+````````````````
+
+### 请求参数unicode编码
+
+单个参数编码urllib.parse.quote()、多个参数编码urllib.parse.urlencode()
+
+在get请求的请求参数中，url使用unicode编码，如果参数携带汉字或者其它字符，使用uft-8编码之后再发送请求
+
+```python
+引入urllib.parse库
+import urllib.parse
+
+#参数部分使用unicode编码，百度搜索“冬天”
+base_url = "https://www.baidu.com/s?wd="
+uni = urllib.parse.quote("冬天") # 冬天使用unicode编码为%E5%86%AC%E5%A4%A9
+url = base_url + uni#url为https://www.baidu.com/s?wd=%E5%86%AC%E5%A4%A9
+
+#如果参数不止一个，如https://www.baidu.com/s?wd=冬天&location=中国台湾
+base_url = "https://www.baidu.com/s?"
+data = {
+    "wd": "冬天",
+    "location": "中国台湾"
+}
+uni = urllib.parse.urlencode(data) #参数接收一个字典
+url = base_url + nui #url为https://www.baidu.com/s?wd=%E5%86%AC%E5%A4%A9&location=%E4%B8%AD%E5%9B%BD%E5%8F%B0%E6%B9%BE
+```
+
+### post请求参数
+post的请求参数/请求数据体需要在Request对象中自定义，Request构造函数中post的参数需要传入一个bytes
+
+```python
+#导库
+import urllib.request
+import urllib.parse
+
+url,headers
+#携带的参数
+data = {
+    "ws": "这是转换前的数据",
+    "name": "王五"
+}
+# 参数信息转化成对应的字节数组
+1.byte = urllib.parse.urlencode(data).encode('utf-8')
+2.byte = bytes(json.dumps(data), 'utf-8')
+
+request = urllib.request.Request(url, byte, headers)
+```
+
+### 异常
+urllib.error包中定义了异常：HTTPError、URLError
+HTTPError是URLError的子类
+
+### handler
+
+定制更高级的请求头，请求对象Request的定制满足不了某些需求（动态cookie和代理等）
+
+`````python
+1.获取hanlder对象
+handler = urllib.request.HTTPHandler()
+
+2.获取opener对象
+opener = urllib.request.build_opener(handler)
+
+3.调用open方法
+response = opener.open(request)
+`````
+
+#### 代理
+
+代理服务器
+
+![image-20240124145938930](C:\Users\ouxiaoxin\AppData\Roaming\Typora\typora-user-images\image-20240124145938930.png)
+
+ProxyHandler实现代理
+
+```python
+proxies = {
+    "http": "代理服务器地址"
+}
+1.创建proxyhandler
+handler = urllib.request.ProxyHandler(proxies=proxies)
+2.获取opener对象
+opener = urllib.request.build_opener(handler)
+3.调用open方法
+response = opener.open(request)
+```
+
+使用代理池
+
+```python
+#代理池
+proxies_pool= [
+    {"http": "xxx.xxx.xxx"},
+    {"http": "xxx.xxx.xxx"},
+    {"http": "xxx.xxx.xxx"}
+]
+
+#随机选择一个代理服务器
+import random
+proxies = random.choice(proxies_pool)
+```
+
+## XPath
+
+### xpath介绍
+
+xpath是一门在xml文档中查找信息的语言，[教程文档](https://www.runoob.com/xpath/xpath-intro.html)
+
+### 在python中使用xpath
+
+1. pip install lxml
+2. 引入lxml中的etree包
+3. 解析html文档/字符串
+4. 使用xpath查找信息
+
+```python
+# 1.
+from lxml import etree
+# 2.
+tree = etree.HTML('html字符串')/
+tree = etree.parse('html文件')
+# 3.
+result = tree.xpath('xpath语法') # 返回列表数据
+```
 
 
 
+## bs4
+
+
+
+## requests
+
+使用比urllib方便
+
+### session对象
+
+保持当前会话状态：
+
+自动保存第一次请求的header信息，它会自动处理和存储服务器发送的`Set-Cookie`头部，以便将`cookies`保存在会话中，并在后续的请求中使用。
+
+
+
+## selenium
+
+
+
+## scrapy
 
 
 

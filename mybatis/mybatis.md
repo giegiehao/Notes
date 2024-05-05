@@ -8,6 +8,9 @@
 
 @Options(useGeneratedKeys = true, keyProperty = "<field>")：useGeneratedKeys 表示使用数据库生成的主键，keyProperty指定接收主键值的属性
 
+@Param：给mapper方法的参数命名，使用情况：1.mapper方法需要给sql语句传入多个参数； 2.@Param注解javaBean对象
+在**不使用**@Param注解声明参数的时候，mapper方法传参只能传一个值或对象，且必须使用的是#{}方式来取参数。
+
 <br/>
 
 ---

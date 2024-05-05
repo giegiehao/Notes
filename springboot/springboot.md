@@ -4,7 +4,7 @@
 - @Component：声明基础bean注解，一般用于自定义bean
 - @Controller：声明控制器类注解
 - @Service：声明业务逻辑类注解
-- @Repository：声明数据访问类注解
+- @Repository：声明数据访问类注解在
 - @ComponentScan： 可以改变注解扫描的范围
 - @Import：使用@Import导入的类会被spring加载到IOC容器中，支持普通类、配置类、ImportSelector接口实现类
 - @EnableXxxx：封装了@Import注解
@@ -91,7 +91,7 @@
 ### 自定义starter
 
 	starter由两部分组成：1.依赖管理：需要引入的依赖    2.自动配置：往bean中注入依赖
-
+	
 	并且依赖管理需要包含自动配置部分，只需引入依赖管理部分就可以由自动配置部分全部引入
 
 <img src="8f63a5ff755b80e9ea32ec5fe3bd49b0.png" alt="截图" style="zoom:50%;" />
